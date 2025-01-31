@@ -37,7 +37,7 @@ jobs:
         run: |
           # 安装AOSP Clang
           git clone https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone \
-              --depth=1 -b 18 clang
+              --depth=1 -b 17 clang
             
           # 安装交叉编译工具链
           git clone -b android-msm-redbull-4.19-android14-qpr3 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
