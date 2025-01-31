@@ -1,0 +1,97 @@
+name: Kernel CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      debug_build:
+        description: 'Build with debug symbols'
+        required: false
+        default: 'false'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: 'Flicker-Android-Devices/kernel_xiaomi_sm8250'
+          ref: 'fifteen'
+          submodules: recursive  # 确保获取内核依赖的子模块
+
+      - name: Setup Toolchains
+        run: |
+          # 安装AOSP Clang
+          git clone https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone \
+              --depth=1 -b 17 clang
+            
+          # 安装交叉编译工具链
+          wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/android13-release.tar.gz
+          mkdir -p aarch64-linux-android-4.9
+          tar -xzf android13-release.tar.gz -C aarch64-linux-android-4.9
+
+      - name: Setup Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+              ccache build-essential libncurses-dev \
+              libssl-dev bc flex bison libelf-dev \
+              zip zstd  # 添加打包所需工具
+
+      - name: Configure CCache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache-kernel
+
+      - name: Build Kernel
+        env:
+          ARCH: arm64
+          CLANG_PATH: ${{ github.workspace }}/clang/bin
+          CROSS_COMPILE: ${{ github.workspace }}/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+        run: |
+          # 生成thyme专用配置
+          make O=out ARCH=$ARCH vendor/thyme_defconfig
+
+          # 完整编译命令
+          make -j$(nproc) O=out ARCH=$ARCH \
+              CC="$CLANG_PATH/clang" \
+              CLANG_TRIPLE=aarch64-linux-gnu- \
+              CROSS_COMPILE="$CROSS_COMPILE" \
+              LD="$CLANG_PATH/ld.lld" \
+              NM="$CLANG_PATH/llvm-nm" \
+              AR="$CLANG_PATH/llvm-ar" \
+              STRIP="$CLANG_PATH/llvm-strip" \
+              OBJCOPY="$CLANG_PATH/llvm-objcopy" \
+              OBJDUMP="$CLANG_PATH/llvm-objdump"
+
+      - name: Prepare AnyKernel3
+        run: |
+          git clone https://github.com/osm0sis/AnyKernel3
+          cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
+          
+          # 自动生成设备识别脚本
+          cat > AnyKernel3/anykernel.sh <<EOF
+          device.name1="thyme"
+          block=/dev/block/bootdevice/by-name/boot
+          is_slot_device=0
+          dtb_supported=true
+          EOF
+
+      - name: Create Flashable ZIP
+        run: |
+          cd AnyKernel3
+          zip -r9 kernel-thyme-${{ github.sha }}.zip *
+          mv *.zip ../
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-thyme-${{ github.sha }}
+          path: kernel-thyme-${{ github.sha }}.zip
