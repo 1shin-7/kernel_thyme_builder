@@ -28,21 +28,27 @@ jobs:
       - name: Setup Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git gcc-aarch64-linux-gnu gperf \
+          sudo apt-get install -y git gcc gcc-aarch64-linux-gnu gperf \
               ccache build-essential libncurses-dev \
               libssl-dev bc flex bison libelf-dev \
               zip zstd  # 添加打包所需工具
 
-      - name: Setup Toolchains
+      - name: Setup Toolchains | BuildTools
+        run: git clone -b android-15.0.0_r0.49 https://android.googlesource.com/kernel/build build_tools
+
+      - name: Setup Toolchains | GCC
         run: |
-          # Clang r530567
-          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang # GREAT thanks to Flicker's build.sh
-            
           # GCC64
           git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 gcc_arm64
 
           # GCC32
           git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 gcc_arm
+
+          # Where is my host gcc?
+          whereis gcc
+
+      - name: Setup Toolchains | Clang
+        run: git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang # GREAT thanks to Flicker's build.sh
 
       - name: Configure CCache
         uses: actions/cache@v4
@@ -57,6 +63,8 @@ jobs:
           CLANG_TRIPLE: aaarch-64-linux-gnu-
           CROSS_COMPILE: ${{ github.workspace }}/gcc_arm64/bin/
           CROSS_COMPILE_ARM32: ${{ github.workspace }}/gcc_arm64/bin/
+          DTC_EXT: ${{ github.workspace }}/build_tools/build-tools/path/linux-x86/path/
+          MKDTBO_EXT: ${{ github.workspace }}/mkdtboimg.py
         run: |
           # Gen configs.
           make O=out thyme_defconfig
