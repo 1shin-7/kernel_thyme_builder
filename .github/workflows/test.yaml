@@ -25,6 +25,14 @@ jobs:
           ref: 'fifteen'
           submodules: recursive  # 确保获取内核依赖的子模块
 
+      - name: Setup Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git \
+              ccache build-essential libncurses-dev \
+              libssl-dev bc flex bison libelf-dev \
+              zip zstd  # 添加打包所需工具
+
       - name: Setup Toolchains
         run: |
           # 安装AOSP Clang
@@ -32,17 +40,7 @@ jobs:
               --depth=1 -b 17 clang
             
           # 安装交叉编译工具链
-          wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/android13-release.tar.gz
-          mkdir -p aarch64-linux-android-4.9
-          tar -xzf android13-release.tar.gz -C aarch64-linux-android-4.9
-
-      - name: Setup Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-              ccache build-essential libncurses-dev \
-              libssl-dev bc flex bison libelf-dev \
-              zip zstd  # 添加打包所需工具
+          git clone -b android-msm-redbull-4.19-android14-qpr3 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
 
       - name: Configure CCache
         uses: actions/cache@v4
