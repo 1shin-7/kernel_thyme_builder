@@ -66,8 +66,11 @@ jobs:
           DTC_EXT: ${{ github.workspace }}/build_tools/build-tools/path/linux-x86/path/
           MKDTBO_EXT: ${{ github.workspace }}/mkdtboimg.py
         run: |
+          # env
+          export PATH="$CLANG_PATH:$PATH"
+
           # Gen configs.
-          make O=out thyme_defconfig
+          make O=out CC="ccache clang" HOSTCC="/usr/bin/gcc" thyme_defconfig
 
           # Build
           make -j$(nproc) O=out \
