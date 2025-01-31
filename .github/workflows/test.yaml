@@ -37,7 +37,7 @@ jobs:
         run: |
           # 安装AOSP Clang
           git clone https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone \
-              --depth=1 -b 17 clang
+              --depth=1 -b 18 clang
             
           # 安装交叉编译工具链
           git clone -b android-msm-redbull-4.19-android14-qpr3 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
@@ -54,8 +54,9 @@ jobs:
           CLANG_PATH: ${{ github.workspace }}/clang/bin
           CROSS_COMPILE: ${{ github.workspace }}/aarch64-linux-android-4.9/bin/aarch64-linux-android-
         run: |
+          ls ${{ github.workspace }} # no defconfig? let me look!
           # 生成thyme专用配置
-          make O=out ARCH=$ARCH vendor/thyme_defconfig
+          make O=out ARCH=$ARCH thyme_defconfig # no need to use vendor/ prefix?
 
           # 完整编译命令
           make -j$(nproc) O=out ARCH=$ARCH \
