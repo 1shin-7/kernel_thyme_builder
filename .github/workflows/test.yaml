@@ -28,7 +28,7 @@ jobs:
       - name: Setup Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git \
+          sudo apt-get install -y git gcc-aarch64-linux-gnu gperf \
               ccache build-essential libncurses-dev \
               libssl-dev bc flex bison libelf-dev \
               zip zstd  # 添加打包所需工具
@@ -53,10 +53,10 @@ jobs:
       - name: Build Kernel
         env:
           ARCH: arm64
-          CLANG_PATH: ${{ github.workspace }}/clang/clang-r530567/bin
+          CLANG_PATH: ${{ github.workspace }}/clang/clang-r530567/bin/
           CLANG_TRIPLE: aaarch-64-linux-gnu-
-          CROSS_COMPILE: ${{ github.workspace }}/gcc_arm64/bin
-          CROSS_COMPILE_ARM32: ${{ github.workspace }}/gcc_arm64/bin
+          CROSS_COMPILE: ${{ github.workspace }}/gcc_arm64/bin/
+          CROSS_COMPILE_ARM32: ${{ github.workspace }}/gcc_arm64/bin/
         run: |
           # Gen configs.
           make O=out thyme_defconfig
@@ -64,7 +64,7 @@ jobs:
           # Build
           make -j$(nproc) O=out \
               CC="ccache clang" \
-              HOSTCC=gcc
+              HOSTCC="/usr/bin/gcc" \
               LD="$CLANG_PATH/ld.lld" \
               AS="$CLANG_PATH/llvm-as" \
               AR="$CLANG_PATH/llvm-ar" \
