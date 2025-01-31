@@ -60,7 +60,7 @@ jobs:
         env:
           ARCH: arm64
           CLANG_PATH: ${{ github.workspace }}/clang/clang-r530567/bin/
-          CLANG_TRIPLE: aaarch-64-linux-gnu-
+          CLANG_TRIPLE: aarch-64-linux-gnu-
           CROSS_COMPILE: ${{ github.workspace }}/gcc_arm64/bin/
           CROSS_COMPILE_ARM32: ${{ github.workspace }}/gcc_arm64/bin/
           DTC_EXT: ${{ github.workspace }}/build_tools/build-tools/path/linux-x86/path/
