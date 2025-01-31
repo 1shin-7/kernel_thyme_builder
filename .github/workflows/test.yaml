@@ -35,12 +35,14 @@ jobs:
 
       - name: Setup Toolchains
         run: |
-          # 安装AOSP Clang
-          git clone https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone \
-              --depth=1 -b 17 clang
+          # Clang r530567
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang # GREAT thanks to Flicker's build.sh
             
-          # 安装交叉编译工具链
-          git clone -b android-msm-redbull-4.19-android14-qpr3 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9
+          # GCC64
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 gcc_arm64
+
+          # GCC32
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 gcc_arm
 
       - name: Configure CCache
         uses: actions/cache@v4
@@ -51,24 +53,32 @@ jobs:
       - name: Build Kernel
         env:
           ARCH: arm64
-          CLANG_PATH: ${{ github.workspace }}/clang/bin
-          CROSS_COMPILE: ${{ github.workspace }}/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+          CLANG_PATH: ${{ github.workspace }}/clang/clang-r530567/bin
+          CLANG_TRIPLE: aaarch-64-linux-gnu-
+          CROSS_COMPILE: ${{ github.workspace }}/gcc_arm64/bin
+          CROSS_COMPILE_ARM32: ${{ github.workspace }}/gcc_arm64/bin
         run: |
-          ls ${{ github.workspace }} # no defconfig? let me look!
-          # 生成thyme专用配置
-          make O=out ARCH=$ARCH thyme_defconfig # no need to use vendor/ prefix?
+          # Gen configs.
+          make O=out thyme_defconfig
 
-          # 完整编译命令
-          make -j$(nproc) O=out ARCH=$ARCH \
-              CC="$CLANG_PATH/clang" \
-              CLANG_TRIPLE=aarch64-linux-gnu- \
-              CROSS_COMPILE="$CROSS_COMPILE" \
+          # Build
+          make -j$(nproc) O=out \
+              CC="ccache clang" \
+              HOSTCC=gcc
               LD="$CLANG_PATH/ld.lld" \
-              NM="$CLANG_PATH/llvm-nm" \
+              AS="$CLANG_PATH/llvm-as" \
               AR="$CLANG_PATH/llvm-ar" \
+              NM="$CLANG_PATH/llvm-nm" \
               STRIP="$CLANG_PATH/llvm-strip" \
               OBJCOPY="$CLANG_PATH/llvm-objcopy" \
-              OBJDUMP="$CLANG_PATH/llvm-objdump"
+              OBJDUMP="$CLANG_PATH/llvm-objdump" \
+              LLVM=1 LLVM_IAS=1
+
+      - name: Upload Image.gz-dtb
+        uses: actions/upload-artifact@v4
+        with:
+          name: Image-${{ github.sha }}
+          path: out/arch/arm64/boot/Image.gz-dtb
 
       - name: Prepare AnyKernel3
         run: |
@@ -87,10 +97,9 @@ jobs:
         run: |
           cd AnyKernel3
           zip -r9 kernel-thyme-${{ github.sha }}.zip *
-          mv *.zip ../
 
-      - name: Upload Artifact
+      - name: Upload AnyKernel3
         uses: actions/upload-artifact@v4
         with:
           name: kernel-thyme-${{ github.sha }}
-          path: kernel-thyme-${{ github.sha }}.zip
+          path: AnyKernel3/kernel-thyme-${{ github.sha }}.zip
