@@ -39,10 +39,13 @@ jobs:
       - name: Setup Toolchains | GCC
         run: |
           # GCC64
-          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 gcc_arm64 -b android-msm-redbull-4.19-android14-qpr3 # same as bottom
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 gcc_arm64 -b android-msm-redbull-4.19-android14-qpr3
 
           # GCC32
-          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 gcc_arm -b android-msm-redbull-4.19-android14-qpr3 # specify refs due to Google move gcc to llvm
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 gcc_arm \
+            -b android-msm-redbull-4.19-android14-qpr3 
+
+          # specify refs due to Google move gcc to llvm
 
       - name: Setup Toolchains | Clang
         run: | 
@@ -59,7 +62,7 @@ jobs:
         env:
           ARCH: arm64
           CLANG_PATH: ${{ github.workspace }}/clang/clang-r530567/bin/
-          CLANG_TRIPLE: aaarch-64-linux-gnu-
+          CLANG_TRIPLE: aarch-64-linux-gnu-
           CROSS_COMPILE: ${{ github.workspace }}/gcc_arm64/bin/
           CROSS_COMPILE_ARM32: ${{ github.workspace }}/gcc_arm64/bin/
           DTC_EXT: ${{ github.workspace }}/build_tools/build-tools/path/linux-x86/path/
