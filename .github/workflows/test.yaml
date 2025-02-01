@@ -45,12 +45,9 @@ jobs:
           git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 gcc_arm \
             -b android-msm-redbull-4.19-android14-qpr3 
 
-          # specify refs due to Google move gcc to llvm
-
       - name: Setup Toolchains | Clang
-        run: | 
+        run: git clone --depth=1 https://github.com/msft-mirror-aosp/platform.prebuilts.clang.host.linux-x86 clang # use mirror repo then.
         # git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang # GREAT thanks to Flicker's build.sh
-          git clone --depth=1 https://github.com/msft-mirror-aosp/platform.prebuilts.clang.host.linux-x86 clang # use mirror repo then.
 
       - name: Configure CCache
         uses: actions/cache@v4
