@@ -39,10 +39,10 @@ jobs:
       - name: Setup Toolchains | GCC
         run: |
           # GCC64
-          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 gcc_arm64
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 gcc_arm64 -b android-msm-redbull-4.19-android14-qpr3 # same as bottom
 
           # GCC32
-          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 gcc_arm
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 gcc_arm -b android-msm-redbull-4.19-android14-qpr3 # specify refs due to Google move gcc to llvm
 
           # Where is my host gcc?
           whereis gcc
