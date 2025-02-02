@@ -58,30 +58,33 @@ jobs:
         env:
           ARCH: arm64
           CLANG_PATH: ${{ github.workspace }}/clang/clang-r530567/bin/
-          CLANG_TRIPLE: aarch-64-linux-gnu-
-          CROSS_COMPILE: ${{ github.workspace }}/gcc_arm64/bin/
-          CROSS_COMPILE_ARM32: ${{ github.workspace }}/gcc_arm64/bin/
-          DTC_EXT: ${{ github.workspace }}/build_tools/build-tools/path/linux-x86/path/
+          GCC32: ${{ github.workspace }}/bin/
+          GCC64: ${{ github.workspace }}/bin/
+          CLANG_TRIPLE: aarch64-linux-gnu-
+          CROSS_COMPILE: aarch64-linux-android-
+          CROSS_COMPILE_ARM32: arm-linux-androideabi-
+          DTC_EXT: ${{ github.workspace }}/build_tools/build-tools/path/linux-x86/path/dtc
           MKDTBO_EXT: ${{ github.workspace }}/mkdtboimg.py
         run: |
           # env
-          export PATH=$CLANG_PATH:$PATH
+          export PATH="$CLANG_PATH:$GCC64:$GCC32:${PATH}"
+          echo $PATH
 
           # Gen configs.
-          PATH=$CLANG_PATH:$PATH make O=out CC="ccache clang" HOSTCC="/usr/bin/gcc" thyme_defconfig
+          PATH="$CLANG_PATH:$GCC64:$GCC32:${PATH}" make O=out CC="ccache clang" HOSTCC="/usr/bin/gcc" thyme_defconfig
 
           # Build
-          PATH=$CLANG_PATH:$PATH make -j$(nproc) O=out \
+          PATH="$CLANG_PATH:$GCC64:$GCC32:${PATH}" make -j$(nproc) O=out \
               V=1 VERBOSE=1 \
               CC="ccache clang" \
-              HOSTCC="/usr/bin/gcc" \
-              LD="$CLANG_PATH/ld.lld" \
-              AS="$CLANG_PATH/llvm-as" \
-              AR="$CLANG_PATH/llvm-ar" \
-              NM="$CLANG_PATH/llvm-nm" \
-              STRIP="$CLANG_PATH/llvm-strip" \
-              OBJCOPY="$CLANG_PATH/llvm-objcopy" \
-              OBJDUMP="$CLANG_PATH/llvm-objdump" \
+              HOSTCC=gcc \
+              LD=ld.lld \
+              AS=llvm-as \
+              AR=llvm-ar \
+              NM=llvm-nm \
+              STRIP=llvm-strip \
+              OBJCOPY=llvm-objcopy \
+              OBJDUMP=llvm-objdump \
               LLVM=1 LLVM_IAS=1
 
       - name: Upload Image.gz-dtb
