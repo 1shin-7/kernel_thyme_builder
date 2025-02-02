@@ -46,8 +46,7 @@ jobs:
             -b android-msm-redbull-4.19-android14-qpr3 
 
       - name: Setup Toolchains | Clang
-        run: git clone --depth=1 https://github.com/msft-mirror-aosp/platform.prebuilts.clang.host.linux-x86 clang # use mirror repo then.
-        # git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang # GREAT thanks to Flicker's build.sh
+        run: git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang # GREAT thanks to Flicker's build.sh
 
       - name: Configure CCache
         uses: actions/cache@v4
@@ -66,13 +65,14 @@ jobs:
           MKDTBO_EXT: ${{ github.workspace }}/mkdtboimg.py
         run: |
           # env
-          export PATH="$CLANG_PATH:$PATH"
+          export PATH=$CLANG_PATH:$PATH
 
           # Gen configs.
-          make O=out CC="ccache clang" HOSTCC="/usr/bin/gcc" thyme_defconfig
+          PATH=$CLANG_PATH:$PATH make O=out CC="ccache clang" HOSTCC="/usr/bin/gcc" thyme_defconfig
 
           # Build
-          make -j$(nproc) O=out \
+          PATH=$CLANG_PATH:$PATH make -j$(nproc) O=out \
+              V=1 VERBOSE=1 \
               CC="ccache clang" \
               HOSTCC="/usr/bin/gcc" \
               LD="$CLANG_PATH/ld.lld" \
