@@ -75,7 +75,6 @@ jobs:
 
           # Build
           PATH="$CLANG_PATH:$GCC64:$GCC32:${PATH}" make -j$(nproc) O=out \
-              V=1 VERBOSE=1 \
               CC="ccache clang" \
               HOSTCC=gcc \
               LD=ld.lld \

@@ -70,7 +70,6 @@ jobs:
 
           # Build
           PATH="$CLANG_PATH:${PATH}" make -j$(nproc) O=out \
-              V=1 VERBOSE=1 \
               CC="ccache clang" \
               LD=ld.lld \
               AS=llvm-as \
