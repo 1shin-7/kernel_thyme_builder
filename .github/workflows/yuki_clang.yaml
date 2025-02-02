@@ -1,0 +1,115 @@
+name: Kernel CI[YUki CLang]
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      debug_build:
+        description: 'Build with debug symbols'
+        required: false
+        default: 'false'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: 'Flicker-Android-Devices/kernel_xiaomi_sm8250'
+          ref: 'fifteen'
+          submodules: recursive  # 确保获取内核依赖的子模块
+
+      - name: Setup Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git gcc gcc-aarch64-linux-gnu gperf \
+              ccache build-essential libncurses-dev \
+              libssl-dev bc flex bison libelf-dev \
+              zip zstd  # 添加打包所需工具
+
+      - name: Setup Toolchains | BuildTools
+        run: git clone -b android-15.0.0_r0.49 https://android.googlesource.com/kernel/build build_tools
+
+      - name: Setup Toolchains | GCC
+        run: |
+          # GCC64
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 gcc_arm64 -b android-msm-redbull-4.19-android14-qpr3
+
+          # GCC32
+          git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 gcc_arm \
+            -b android-msm-redbull-4.19-android14-qpr3 
+
+      - name: Setup Toolchains | Clang
+        run: git clone --depth=1 https://bitbucket.org/thexperienceproject/yuki_clang
+        
+      - name: Configure CCache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache-kernel
+
+      - name: Build Kernel
+        env:
+          ARCH: arm64
+          CLANG_PATH: ${{ github.workspace }}/yuki_clang/bin/ # /clang/clang-r530567/bin/
+          CLANG_TRIPLE: aarch-64-linux-gnu-
+          DTC_EXT: ${{ github.workspace }}/build_tools/build-tools/path/linux-x86/path/
+          MKDTBO_EXT: ${{ github.workspace }}/mkdtboimg.py
+        run: |
+          # env
+          export PATH=$CLANG_PATH:$PATH
+
+          # Gen configs.
+          PATH="$CLANG_PATH:${PATH}" make O=out thyme_defconfig
+
+          # Build
+          PATH="$CLANG_PATH:${PATH}" make -j$(nproc) O=out \
+              V=1 VERBOSE=1 \
+              CC="ccache clang" \
+              LD=ld.lld \
+              AS=llvm-as \
+              AR=$CLANG_PATH/llvm-ar \
+              NM=$CLANG_PATH/llvm-nm \
+              STRIP=$CLANG_PATH/llvm-strip \
+              OBJCOPY=$CLANG_PATH/llvm-objcopy \
+              OBJDUMP=$CLANG_PATH/llvm-objdump \
+              CLANG_TRIPLE=aarch64-linux-gnu- \
+              CROSS_COMPILE=aarch64-linux-gnu- \
+              CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+              LLVM=1 LLVM_IAS=1
+
+      - name: Upload Image.gz-dtb
+        uses: actions/upload-artifact@v4
+        with:
+          name: Image-${{ github.sha }}
+          path: out/arch/arm64/boot/Image.gz-dtb
+
+      - name: Prepare AnyKernel3
+        run: |
+          git clone https://github.com/osm0sis/AnyKernel3
+          cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
+          
+          # 自动生成设备识别脚本
+          cat > AnyKernel3/anykernel.sh <<EOF
+          device.name1="thyme"
+          block=/dev/block/bootdevice/by-name/boot
+          is_slot_device=0
+          dtb_supported=true
+          EOF
+
+      - name: Create Flashable ZIP
+        run: |
+          cd AnyKernel3
+          zip -r9 kernel-thyme-${{ github.sha }}.zip *
+
+      - name: Upload AnyKernel3
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-thyme-${{ github.sha }}
+          path: AnyKernel3/kernel-thyme-${{ github.sha }}.zip
